@@ -35,4 +35,7 @@ public class Book {
 
     @Column(name="published_date")
     private LocalDate publishedDate;
+
+    @Column(name="price")
+    private double price;
 }
