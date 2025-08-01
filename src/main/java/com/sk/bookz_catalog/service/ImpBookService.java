@@ -5,6 +5,7 @@ import com.sk.bookz_catalog.entity.Book;
 import com.sk.bookz_catalog.mapper.BookMapper;
 import com.sk.bookz_catalog.repo.IBookRepository;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -21,14 +22,14 @@ public class ImpBookService implements IBookService {
         this.bookRepository = bookRepository;
     }
 
-    @CacheEvict(value={"books", "books_query", "book"},allEntries = true)
+    @CachePut(value = "books", key = "#result.id")
     @Override
     public BookDto newBook(BookDto bookDto) {
         Book savedBook = bookRepository.save(BookMapper.toBook(bookDto));
         return BookMapper.toBookDto(savedBook);
     }
 
-    @Cacheable("books")
+    @Cacheable(value = "books", key = "'all'")
     @Override
     public List<BookDto> getAllBooks() {
         return bookRepository.findAll()
