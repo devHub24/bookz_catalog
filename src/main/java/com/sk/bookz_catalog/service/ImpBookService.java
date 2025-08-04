@@ -4,10 +4,12 @@ import com.sk.bookz_catalog.dto.BookDto;
 import com.sk.bookz_catalog.entity.Book;
 import com.sk.bookz_catalog.mapper.BookMapper;
 import com.sk.bookz_catalog.repo.IBookRepository;
+import org.apache.kafka.clients.admin.NewTopic;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -17,16 +19,22 @@ import java.util.stream.Collectors;
 public class ImpBookService implements IBookService {
 
     private final IBookRepository bookRepository;
+    private final KafkaTemplate<String, BookDto> kafkaTemplate;
+    private final NewTopic topic;
 
-    public ImpBookService(IBookRepository bookRepository) {
+    public ImpBookService(IBookRepository bookRepository, KafkaTemplate<String, BookDto> kafkaTemplate, NewTopic topic) {
         this.bookRepository = bookRepository;
+        this.kafkaTemplate = kafkaTemplate;
+        this.topic = topic;
     }
 
     @CachePut(value = "books", key = "#result.id")
     @Override
     public BookDto newBook(BookDto bookDto) {
         Book savedBook = bookRepository.save(BookMapper.toBook(bookDto));
-        return BookMapper.toBookDto(savedBook);
+        BookDto result = BookMapper.toBookDto(savedBook);
+        this.kafkaTemplate.send(this.topic.name(), result);
+        return result;
     }
 
     @Cacheable(value = "books", key = "'all'")
